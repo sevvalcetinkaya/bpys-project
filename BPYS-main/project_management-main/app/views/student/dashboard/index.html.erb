@@ -1,0 +1,61 @@
+<% if @project_selection_deadline.present? %>
+  <div class="alert alert-info">
+    📅 Proje seçim son tarihi: <strong><%= @project_selection_deadline.strftime("%d.%m.%Y") %></strong>
+  </div>
+<% else %>
+  <div class="alert alert-warning">
+    Proje seçim son tarihi henüz belirlenmemiş.
+  </div>
+<% end %>
+
+<h2 class="mb-4">Projeniz</h2>
+
+<% if current_user.group && current_user.group.project.present? %>
+  <% project = current_user.group.project %>
+  <% group = current_user.group %>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <table class="table table-bordered table-hover">
+        <tbody>
+          <tr>
+            <th scope="row">Proje Başlığı</th>
+            <td><%= project.title %></td>
+          </tr>
+          <tr>
+            <th scope="row">Danışman</th>
+            <td><%=  project.advisor&.email || "Danışman yok" %></td>
+          </tr>
+          <tr>
+            <th scope="row">Grup Adı</th>
+            <td><%= group.name %></td>
+          </tr>
+          <tr>
+            <th scope="row">Grup Üyeleri</th>
+            <td>
+              <ul class="mb-0">
+                <% group.students.each do |user| %>
+                  <li><%= user.email %></li>
+                <% end %>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Proje Durumu</th>
+            <td>
+              <% if project.published? %>
+                <span class="text-success fw-bold">Onaylandı</span>
+              <% else %>
+                <span class="text-warning fw-bold">Onay Bekliyor</span>
+              <% end %>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% else %>
+  <div class="alert alert-info">
+    Henüz bir projeye atanmadınız.
+  </div>
+<% end %>
