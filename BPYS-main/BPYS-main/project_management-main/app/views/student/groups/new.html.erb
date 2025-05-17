@@ -1,0 +1,111 @@
+<h2>Yeni Grup Oluştur</h2>
+
+<%= form_with model: @group, url: student_groups_path, method: :post, local: true do |f| %>
+  <h4>Grup Üyeleri</h4>
+  <div id="members">
+    <!-- Grup lideri (current_user) -->
+    <div class="input-group mb-2">
+      <input type="text" class="form-control" value="<%= "#{current_user.first_name} #{current_user.last_name}" + " - " + "#{current_user.student_number}" %>" disabled>
+      <input type="hidden" name="group[member_emails][]" value="<%= current_user.email %>">
+      <span class="input-group-text bg-secondary text-white">Lider</span>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <div id="student-selects"></div>
+    <button type="button" id="add-student" class="btn btn-secondary mt-2">+ Grup Üyesi Ekle</button>
+  </div>
+
+  <%= f.submit "Grubu Oluştur", class: "btn btn-success mt-3" %>
+<% end %>
+
+<% if (quota = SystemSetting.find_by(key: "group_quota")&.value.to_i).positive? %>
+  <div class="alert alert-info">
+    Grup lideri (siz) dahil olmak üzere toplam <strong><%= quota %></strong> kişi olabilir.
+    Bu nedenle en fazla <strong><%= quota - 1 %></strong> öğrenci ekleyebilirsiniz.
+  </div>
+<% end %>
+
+
+<%= javascript_tag do %>
+  document.addEventListener("turbo:load", function () {
+    const addButton = document.getElementById("add-student");
+    const container = document.getElementById("student-selects");
+
+    if (!addButton || addButton.dataset.bound === "true") return;
+
+    addButton.dataset.bound = "true";
+
+    const quota = <%= SystemSetting.find_by(key: "group_quota")&.value.to_i || 0 %>;
+    const maxSelectableStudents = quota > 0 ? quota - 1 : 0;
+
+    const students = <%= raw(
+      User.where(role: "student").where.not(id: current_user.id).map do |u|
+        {
+          id: u.id,
+          name: "#{u.first_name} #{u.last_name}".strip.presence || u.email,
+          stu_no: "#{u.student_number}",
+          has_group: u.group.present?
+        }
+      end.to_json
+    ) %>;
+
+    function getCurrentStudentCount() {
+      return container.querySelectorAll("select").length;
+    }
+
+    function createSelect() {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("d-flex", "align-items-center", "mb-2");
+
+      const select = document.createElement("select");
+      select.name = "group[student_ids][]";
+      select.className = "form-control me-2";
+      select.required = true;
+
+      const emptyOption = document.createElement("option");
+      emptyOption.value = "";
+      emptyOption.text = "Bir öğrenci seçin...";
+      select.appendChild(emptyOption);
+
+      students.forEach(function (student) {
+        const option = document.createElement("option");
+        option.value = student.id;
+        option.text = student.name + " - " + student.stu_no + (student.has_group ? " (Zaten grupta)" : "");
+        if (student.has_group) option.disabled = true;
+        select.appendChild(option);
+      });
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn btn-outline-danger btn-sm";
+      removeBtn.innerText = "❌";
+      removeBtn.onclick = () => {
+        wrapper.remove();
+        if (getCurrentStudentCount() < maxSelectableStudents) {
+          addButton.disabled = false;
+        }
+      };
+
+      wrapper.appendChild(select);
+      wrapper.appendChild(removeBtn);
+
+      return wrapper;
+    }
+
+    addButton.addEventListener("click", function () {
+      const current = getCurrentStudentCount();
+      if (current >= maxSelectableStudents) {
+        alert("Kotaya ulaştınız! Daha fazla öğrenci ekleyemezsiniz.");
+        addButton.disabled = true;
+        return;
+      }
+
+      container.appendChild(createSelect());
+
+      if (getCurrentStudentCount() >= maxSelectableStudents) {
+        addButton.disabled = true;
+      }
+    });
+  });
+<% end %>

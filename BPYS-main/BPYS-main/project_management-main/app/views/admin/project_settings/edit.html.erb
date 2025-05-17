@@ -1,0 +1,95 @@
+<div class="container my-5">
+
+  <h2 class="mb-4">Proje Seçim Ayarları</h2>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <%= form_with model: @deadline, url: admin_project_setting_path, method: :patch, local: true do |form| %>
+        <div class="mb-3">
+          <%= form.label :value, "Son Proje Seçim Tarihi", class: "form-label" %>
+          <%= form.date_field :value, value: @deadline.value, class: "form-control" %>
+        </div>
+        <%= form.submit "Güncelle", class: "btn btn-success" %>
+      <% end %>
+    </div>
+  </div>
+
+  <h3 class="mb-3">Proje Seçimi Yapmış Gruplar</h3>
+  <% if @groups_with_projects.any? %>
+    <div class="table-responsive mb-5">
+      <table class="table table-bordered table-striped align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>Danışman</th>
+            <th>Grup Adı</th>
+            <th>Grup Üyeleri</th>
+            <th>Proje Başlığı</th>
+            <th>Oluşturulma Tarihi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% grouped_by_advisor = @groups_with_projects.group_by { |g| g.project&.advisor } %>
+
+          <% grouped_by_advisor.each do |advisor, groups| %>
+            <% groups.each_with_index do |group, index| %>
+              <tr>
+                <% if index == 0 %>
+                  <td rowspan="<%= groups.size %>"><%= advisor&.full_name || "Bilinmiyor" %></td>
+                <% end %>
+                <td><%= group.name %></td>
+                <td>
+                  <ul class="mb-0 ps-3">
+                    <% group.students.each do |student| %>
+                      <li><%= student.full_name %> - <%= student.student_number %></li>
+                    <% end %>
+                  </ul>
+                </td>
+                <td><%= group.project&.title || "—" %></td>
+                <td><%= group.created_at.strftime("%d.%m.%Y") %></td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+      <%= button_to "Grupları Danışman Kodlarıyla Yeniden Adlandır", rename_groups_admin_project_setting_path, method: :patch, class: "btn btn-outline-primary mt-4", data: { confirm: "Tüm grup adları yeniden adlandırılacak. Emin misiniz?" } %>
+    </div>
+  <% else %>
+    <div class="alert alert-info">Proje seçimi yapmış grup bulunmamaktadır.</div>
+  <% end %>
+  <%= link_to "CSV Dışa Aktar", export_groups_to_csv_admin_project_setting_path, class: "btn btn-success" %>
+
+
+  <h3 class="mb-3">Proje Seçimi Yapmamış Gruplar</h3>
+  <% if @groups_without_project.any? %>
+    <div class="table-responsive mb-4">
+      <table class="table table-bordered table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Grup Adı</th>
+            <th>Grup Üyeleri</th>
+            <th>Oluşturulma Tarihi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @groups_without_project.each do |group| %>
+            <tr>
+              <td><%= group.name %></td>
+              <td>
+                  <ul class="mb-0 ps-3">
+                    <% group.students.each do |student| %>
+                      <li><%= student.full_name %> - <%= student.student_number %></li>
+                    <% end %>
+                  </ul>
+                </td>
+              <td><%= group.created_at.strftime("%d.%m.%Y") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <%= button_to 'Rastgele Proje Ata', assign_random_projects_admin_project_setting_path, method: :post, class: 'btn btn-success' %>
+    </div>
+  <% else %>
+    <div class="alert alert-info">Proje seçimi yapmamış grup bulunmamaktadır.</div>
+  <% end %>
+
+</div>

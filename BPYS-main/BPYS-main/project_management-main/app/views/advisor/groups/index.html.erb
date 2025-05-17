@@ -1,0 +1,45 @@
+<h2 class="mb-4">Onayladığınız Projeler ve Proje Teklifleri</h2>
+
+<% # Danışmanın onayladığı projeler %>
+<% projects = current_user.projects.includes(groups: [students: []]) %>
+
+<% # Danışmanın onayladığı proje teklifleri %>
+<% accepted_proposals = ProjectProposal.where(advisor_id: current_user.id, status: "accepted").includes(group: :students) %>
+
+<% if projects.any? || accepted_proposals.any? %>
+  <table class="table table-bordered table-hover">
+    <thead class="thead-dark">
+      <tr>
+        <th>Proje Başlığı</th>
+        <th>Grup Adı</th>
+        <th>Grup Üyeleri</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% # Projects tablosundaki projeler %>
+      <% projects.each do |project| %>
+        <% project.groups.each_with_index do |group, index| %>
+          <tr>
+            <% if index == 0 %>
+              <td rowspan="<%= project.groups.size %>" class="align-middle"><%= project.title %></td>
+            <% end %>
+            <td><%= group.name %></td>
+            <td>
+              <ul class="mb-0">
+                <% group.students.each do |student| %>
+                  <li><%= "#{student.first_name} #{student.last_name} - #{student.student_number}" %></li>
+                <% end %>
+              </ul>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="alert alert-info">Henüz onayladığınız projeler veya proje teklifleri bulunmamaktadır.</div>
+<% end %>
+
+<div class="container position-relative">
+  <%= link_to "Geri", advisor_dashboard_path, class: "btn btn-sm btn-outline-secondary position-absolute", style: "top: 1rem; right: 1rem; z-index: 10;" %>
+</div>

@@ -1,0 +1,65 @@
+<h2 class="mb-4">Projeniz</h2>
+
+<% group = current_user.group %>
+<% project = group&.project %>
+<% project_proposal = group&.project_proposals&.find_by(status: "accepted") %>
+
+<% if project.present? || project_proposal.present? %>
+  <% display_data = {
+    title: project&.title || project_proposal&.title,
+    advisor: project&.advisor&.full_name || project_proposal&.advisor&.full_name || "Danışman atanmamış",
+    group_name: group.name,
+    students: group.students,
+    description: project&.description || project_proposal&.description,
+    status: project.present? ? (project.published? ? "Onaylandı" : "Onay Bekliyor") : "Kabul Edildi",
+    status_class: project.present? ? (project.published? ? "text-success" : "text-warning") : "text-success"
+  } %>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <table class="table table-bordered table-hover">
+        <tbody>
+          <tr>
+            <th scope="row">Proje Başlığı</th>
+            <td><%= display_data[:title] %></td>
+          </tr>
+          <tr>
+            <th scope="row">Danışman</th>
+            <td><%= display_data[:advisor] %></td>
+          </tr>
+          <tr>
+            <th scope="row">Grup Adı</th>
+            <td><%= display_data[:group_name] %></td>
+          </tr>
+          <tr>
+            <th scope="row">Grup Üyeleri</th>
+            <td>
+              <ul class="mb-0">
+                <% display_data[:students].each do |user| %>
+                  <li><%= "#{user.first_name} #{user.last_name} - #{user.student_number}" %></li>
+                <% end %>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Durum</th>
+            <td><span class="<%= display_data[:status_class] %> fw-bold"><%= display_data[:status] %></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <%# Ek olarak: Reddedilmemiş başka bir proje önerisi varsa durumu göster %>
+  <% other_proposal = group.project_proposals.where.not(status: "rejected").where.not(id: project_proposal&.id).first %>
+  <% if other_proposal.present? %>
+    <div class="alert alert-warning mt-3">
+      Mevcut bir başka proje teklifiniz var. Durumu: <strong><%= other_proposal.status.capitalize %></strong>
+    </div>
+  <% end %>
+
+<% else %>
+  <div class="alert alert-info">
+    Henüz bir projeye atanmadınız veya proje teklifiniz onaylanmadı.
+  </div>
+<% end %>
